@@ -74,7 +74,7 @@ Param(
 )
 
  
-    $secret = Get-AzureKeyVaultSecret -VaultName $VaultName -Name $SecretName
+    $secret = Get-AzureKeyVaultSecret -VaultName $VaultName -Name $SecretName -ErrorAction Stop
 
     if ($SecureString) {
         return ConvertTo-SecureString -String $secret.SecretValueText -AsPlainText -Force
@@ -170,8 +170,7 @@ if ($ProvideUpdates) {
                    $anotherIteration = $true
                 } 
 
-
-
+                
                 $prettyLink = $_.OperationStatusLink.Replace("https://management.azure.com/subscriptions/","").Replace("/providers/Microsoft.Sql/servers", "").replace("/importExportOperationResults","").replace("/$SubscriptionId/","").replace("$SubscriptionId/resourceGroups/","").replace("/databases","").replace("$DBResourceGroup/$DBServer","")
                 Write-Host $latestStatus.Status $latestStatus.StatusMessage $prettyLink
                 
