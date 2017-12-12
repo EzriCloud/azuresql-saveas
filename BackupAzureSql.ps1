@@ -119,10 +119,18 @@ Param(
     # Generate a unique filename for the BACPAC
     $bacpacFilename = $DatabaseName + (Get-Date).ToString("dd") + ".bacpac"
 
+
+    Write-Host "Saving $DatabaseName as $bacpacFilename"
+
     # Storage account info for the BACPAC
-    $storageContainer = 
-    $BaseStorageUri = "https://"+ $DumpStorageAccount + ".blob.core.windows.net/" + $DatabaseName.Replace("_","").ToLower() + "/"
+    $DumpContainer = $DatabaseName.Replace("_","").ToLower()
+    $BaseStorageUri = "https://"+ $DumpStorageAccount + ".blob.core.windows.net/" + $DumpContainer + "/"
     $BacpacUri = $BaseStorageUri + $bacpacFilename
+
+    $DumpAccountDetails = (Get-AzureRmStorageAccount -StorageAccountName $DumpStorageAccount -ResourceGroupName $DumpResourceGroup)
+    
+    #Remove an existing file, if one exists
+    Remove-AzureStorageBlob -Blob "$bacpacFilename" -Container $DumpContainer -Context $($DumpAccountDetails.Context) -ErrorAction Ignore
 
 
     $dumpStorageKey = (Get-AzureRmStorageAccountKey -ResourceGroupName $DumpResourceGroup -Name $DumpStorageAccount)[0].Value
@@ -140,15 +148,13 @@ Param(
 $responses =  [System.Collections.ArrayList]@()
 
 $Databases.split(",") | ForEach-Object {
-    Write-Host "Saving $_ as bacpac"
     $resp = Save-Database -DatabaseName $_ -ResourceGroup $DBResourceGroup -ServerName $DBServer -PasswordVaultName $PasswordVaultName -DumpResourceGroup $DumpResourceGroup -DumpStorageAccount $DumpStorageAccount
     $responses.Add($resp)
+    Write-Host "$_ status: $($resp.OperationStatusLink)"
 }
     
 
-Write-Host $responses
-
-
+$responses
 if ($ProvideUpdates) {
 
     $inProgress = $true
@@ -163,7 +169,7 @@ if ($ProvideUpdates) {
 
                 if ($latestStatusCode.Equals("InProgress")) {
                    $inProgress = $true
-                   Write-Host $_ $latestStatus.Status
+                   Write-Host $latestStatus.StatusMessage $_.OperationStatusLink
                 }
 
             }
