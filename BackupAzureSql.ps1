@@ -169,7 +169,8 @@ if ($ProvideUpdates) {
 
                 if ($latestStatusCode.Equals("InProgress")) {
                    $inProgress = $true
-                   Write-Host $latestStatus.StatusMessage $_.OperationStatusLink
+                   $prettyLink = $_.OperationStatusLink.Replace("https://management.azure.com/subscriptions/","").Replace("/providers/Microsoft.Sql/servers", "").replace("/importExportOperationResults","").replace("/$SubscriptionId/","").replace("$SubscriptionId/resourceGroups/","")
+                   Write-Host $latestStatus.StatusMessage $prettyLink
                 }
 
             }
