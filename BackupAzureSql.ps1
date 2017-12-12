@@ -138,7 +138,7 @@ Param(
 
     $exportRequest = New-AzureRmSqlDatabaseExport -ResourceGroupName $ResourceGroup -ServerName $ServerName `
        -DatabaseName $DatabaseName -StorageKeytype StorageAccessKey -StorageKey $dumpStorageKey -StorageUri $BacpacUri `
-       -AdministratorLogin $sqlCreds.UserName -AdministratorLoginPassword $sqlCreds.Password
+       -AdministratorLogin $sqlCreds.UserName -AdministratorLoginPassword $sqlCreds.Password -ErrorAction Stop
 
     return ($exportRequest)
 
@@ -154,29 +154,34 @@ $Databases.split(",") | ForEach-Object {
 }
     
 
-$responses
 if ($ProvideUpdates) {
+    $anotherIteration = $true
+    $iSleep = 1;
 
-    $inProgress = $true
-    
-    while ($inProgress = $true) {
-
-            $inProgress = $false
-
+    while ($anotherIteration.Equals($true)) {
+            
+            $anotherIteration = $false
+            
             $responses | ForEach-Object {
                 $latestStatus = (Get-AzureRmSqlDatabaseImportExportStatus -OperationStatusLink $_.OperationStatusLink)
                 $latestStatusCode = $latestStatus.Status
 
                 if ($latestStatusCode.Equals("InProgress")) {
-                   $inProgress = $true
-                   $prettyLink = $_.OperationStatusLink.Replace("https://management.azure.com/subscriptions/","").Replace("/providers/Microsoft.Sql/servers", "").replace("/importExportOperationResults","").replace("/$SubscriptionId/","").replace("$SubscriptionId/resourceGroups/","")
-                   Write-Host $latestStatus.StatusMessage $prettyLink
-                }
+                   $anotherIteration = $true
+                } 
+
+
+
+                $prettyLink = $_.OperationStatusLink.Replace("https://management.azure.com/subscriptions/","").Replace("/providers/Microsoft.Sql/servers", "").replace("/importExportOperationResults","").replace("/$SubscriptionId/","").replace("$SubscriptionId/resourceGroups/","").replace("/databases","").replace("$DBResourceGroup/$DBServer","")
+                Write-Host $latestStatus.Status $latestStatus.StatusMessage $prettyLink
+                
+                
 
             }
 
-            Start-Sleep -s 32
+            $iSleep++;
 
+            Start-Sleep -s $iSleep
         
 
     }
